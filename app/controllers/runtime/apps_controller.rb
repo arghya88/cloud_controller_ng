@@ -8,11 +8,11 @@ require 'models/helpers/process_types'
 
 module VCAP::CloudController
   class AppsController < RestController::ModelController
-    model_class_name :ProcessModel
+    model_class_name :AppModel
     self.not_found_exception_name = 'AppNotFound'
 
     VCAP::CloudController.set_controller_for_model_name(
-      model_name: 'ProcessModel',
+      model_name: 'AppModel',
       controller: self
     )
 
@@ -197,12 +197,12 @@ module VCAP::CloudController
       BlobDispatcher.new(blobstore: @blobstore, controller: self)
     end
 
-    def before_update(app)
-      verify_enable_ssh(app.space)
+    def before_update(process)
+      verify_enable_ssh(process.space)
       updated_diego_flag = request_attrs['diego']
       ports              = request_attrs['ports']
       ignore_empty_ports! if ports == []
-      if should_warn_about_changed_ports?(app.diego, updated_diego_flag, ports)
+      if should_warn_about_changed_ports?(process.diego, updated_diego_flag, ports)
         add_warning('App ports have changed but are unknown. The app should now listen on the port specified by environment variable PORT.')
       end
     end
@@ -245,8 +245,8 @@ module VCAP::CloudController
       logger.debug 'cc.update', guid: guid, attributes: redact_attributes(:update, request_attrs)
       raise InvalidRequest unless request_attrs
 
-      process = find_guid(guid)
-      app     = process.app
+      app = find_guid(guid)
+      process = app.web_process
 
       before_update(process)
 
@@ -388,10 +388,6 @@ module VCAP::CloudController
 
     def get_filtered_dataset_for_enumeration(model, ds, qp, opts)
       AppQuery.filtered_dataset_from_query_params(model, ds, qp, opts)
-    end
-
-    def filter_dataset(dataset)
-      dataset.where(type: ProcessTypes::WEB)
     end
 
     define_messages

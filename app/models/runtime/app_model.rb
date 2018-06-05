@@ -1,4 +1,7 @@
 require 'cloud_controller/database_uri_generator'
+require 'models/runtime/buildpack_lifecycle_data_model'
+require 'models/runtime/app_event'
+require 'models/runtime/route_mapping_model'
 require 'models/helpers/process_types'
 
 module VCAP::CloudController
@@ -33,6 +36,15 @@ module VCAP::CloudController
     add_association_dependencies buildpack_lifecycle_data: :destroy
 
     strip_attributes :name
+
+    one_through_one :stack,
+      join_table:        BuildpackLifecycleDataModel.table_name,
+      left_primary_key:  :app_guid, left_key: :guid,
+      right_primary_key: :name, right_key: :stack,
+      after_load:        :convert_nil_to_default_stack
+
+    one_to_many :events, class: VCAP::CloudController::AppEvent, key: :app_id
+    one_to_many :route_mappings, class: VCAP::CloudController::RouteMappingModel, key: :app_guid
 
     def before_save
       update_enable_ssh

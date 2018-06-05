@@ -89,6 +89,8 @@ module VCAP::CloudController::RestController
     rescue Sequel::HookFailed => e
       raise CloudController::Errors::ApiError.new_from_details('InvalidRequest', e.message)
     rescue Sequel::DatabaseError => e
+      p e
+      p e.backtrace
       raise self.class.translate_and_log_exception(logger, e)
     rescue CloudController::Blobstore::BlobstoreError => e
       raise CloudController::Errors::ApiError.new_from_details('BlobstoreError', e.message)

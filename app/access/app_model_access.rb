@@ -1,5 +1,5 @@
 module VCAP::CloudController
-  class ProcessModelAccess < BaseAccess
+  class AppModelAccess < BaseAccess
     def create?(app, params=nil)
       return true if admin_user?
       return false if app.in_suspended_org?

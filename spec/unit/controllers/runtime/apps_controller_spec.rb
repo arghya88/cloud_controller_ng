@@ -1768,8 +1768,8 @@ module VCAP::CloudController
       end
 
       context 'when docker is disabled' do
-        let!(:stopped_process) { ProcessModelFactory.make(:docker, state: 'STOPPED', docker_image: 'docker-image') }
-        let!(:started_process) { ProcessModelFactory.make(:docker, state: 'STARTED', docker_image: 'docker-image') }
+        let!(:stopped_process) { ProcessModelFactory.make(:docker, state: 'STOPPED', docker_image: 'docker-image', type: 'web') }
+        let!(:started_process) { ProcessModelFactory.make(:docker, state: 'STARTED', docker_image: 'docker-image', type: 'web') }
 
         before do
           FeatureFlag.find(name: 'diego_docker').update(enabled: false)
@@ -1778,9 +1778,9 @@ module VCAP::CloudController
         it 'returns docker disabled message on start' do
           set_current_user(make_developer_for_space(stopped_process.space))
 
-          put "/v2/apps/#{stopped_process.guid}", MultiJson.dump(state: 'STARTED')
+          put "/v2/apps/#{stopped_process.app.guid}", MultiJson.dump(state: 'STARTED')
 
-          expect(last_response.status).to eq(400)
+          expect(last_response.status).to eq(400), last_response.body
           expect(last_response.body).to match /Docker support has not been enabled/
           expect(decoded_response['code']).to eq(320003)
         end
@@ -1788,7 +1788,7 @@ module VCAP::CloudController
         it 'does not return docker disabled message on stop' do
           set_current_user(make_developer_for_space(started_process.space))
 
-          put "/v2/apps/#{started_process.guid}", MultiJson.dump(state: 'STOPPED')
+          put "/v2/apps/#{started_process.app.guid}", MultiJson.dump(state: 'STOPPED')
 
           expect(last_response.status).to eq(201)
         end
@@ -2003,16 +2003,24 @@ module VCAP::CloudController
     end
 
     describe 'enumerate' do
-      let!(:web_app) { ProcessModel.make(type: 'web') }
-      let!(:other_app) { ProcessModel.make(type: 'other') }
+      let!(:web_app) do
+        app = AppModel.make
+        ProcessModel.make(type: 'web', app: app)
+        app
+      end
+      let!(:other_app) do
+        app = AppModel.make
+        ProcessModel.make(type: 'other', app: app)
+        app
+      end
 
       before do
         set_current_user_as_admin
       end
 
-      it 'displays apps with type web' do
+      it 'displays apps with web processes' do
         get '/v2/apps'
-        expect(decoded_response['total_results']).to eq(1)
+        expect(decoded_response['total_results']).to eq(1), decoded_response
         expect(decoded_response['resources'][0]['metadata']['guid']).to eq(web_app.guid)
       end
     end

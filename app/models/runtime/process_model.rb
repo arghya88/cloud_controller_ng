@@ -131,7 +131,7 @@ module VCAP::CloudController
 
     STARTED            = 'STARTED'.freeze
     STOPPED            = 'STOPPED'.freeze
-    APP_STATES         = [STARTED, STOPPED].freeze
+    PROCESS_STATES = [STARTED, STOPPED].freeze
     HEALTH_CHECK_TYPES = [
       HealthCheckTypes::PORT,
       HealthCheckTypes::PROCESS,
@@ -229,7 +229,7 @@ module VCAP::CloudController
 
       copy_buildpack_errors
 
-      validates_includes APP_STATES, :state, allow_missing: true, message: 'must be one of ' + APP_STATES.join(', ')
+      validates_includes PROCESS_STATES, :state, allow_missing: true, message: 'must be one of ' + PROCESS_STATES.join(', ')
       validates_includes HEALTH_CHECK_TYPES, :health_check_type, allow_missing: true, message: 'must be one of ' + HEALTH_CHECK_TYPES.join(', ')
 
       validate_health_check_type_and_port_presence_are_in_agreement
